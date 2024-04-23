@@ -1,5 +1,6 @@
 import React from "react";
-import { parsePrompt } from "./util/parse_prompt";
+import { debounce } from "lodash";
+import { formatPrompt, parsePrompt } from "./util/parse_prompt";
 import "./App.css";
 
 const initPrompt = `{
@@ -25,12 +26,22 @@ function PromptEditor() {
   const [parsedPrompt, setParsedPrompt] = React.useState(
     toJSON(parsePrompt(initPrompt)),
   );
-  const copyToPasteboard = () => {
-    navigator.clipboard.writeText(parsedPrompt);
+  const debounced = React.useMemo(() => debounce(setParsedPrompt, 500), []);
+
+  const copyToPasteboard = (s: string) => () => {
+    navigator.clipboard.writeText(s);
+  };
+
+  const formatText = () => {
+    try {
+      setPrompt(formatPrompt(JSON.parse(prompt)));
+    } catch (e) {
+      console.error(e);
+    }
   };
   const stl: React.CSSProperties = {
     flex: 1,
-    overflow: "auto",
+    overflowY: "auto",
     wordWrap: "break-word",
     borderRadius: 20,
   };
@@ -38,6 +49,12 @@ function PromptEditor() {
     <div style={{ display: "flex", gap: "1.5rem" }}>
       <div style={{ display: "grid", gap: "0.5rem", ...stl }}>
         <h2 style={{ textAlign: "center" }}>Prompt Editor</h2>
+        <p style={{ textAlign: "right" }}>
+          <button style={{ marginRight: "0.5rem" }} onClick={formatText}>
+            Format
+          </button>
+          <button onClick={copyToPasteboard(prompt)}>Copy</button>
+        </p>
         <textarea
           value={prompt}
           style={{
@@ -47,7 +64,7 @@ function PromptEditor() {
           placeholder="Enter your prompt here"
           onChange={(e) => {
             setPrompt(e.target.value);
-            setParsedPrompt(toJSON(parsePrompt(e.target.value)));
+            debounced(toJSON(parsePrompt(e.target.value)));
           }}
         />
       </div>
@@ -55,13 +72,15 @@ function PromptEditor() {
         style={{
           ...stl,
           background: "lightgray",
-          padding: "0 1rem",
+          padding: "1rem",
           boxShadow: "7px 10px 15px gray",
         }}
       >
         <h2 style={{ textAlign: "center" }}>OpenAI Request</h2>
-        <button onClick={copyToPasteboard}>Copy</button>
-        <pre>{parsedPrompt}</pre>
+        <p style={{ textAlign: "right" }}>
+          <button onClick={copyToPasteboard(parsedPrompt)}>Copy</button>
+        </p>
+        <pre style={{ whiteSpace: "break-spaces" }}>{parsedPrompt}</pre>
       </div>
     </div>
   );

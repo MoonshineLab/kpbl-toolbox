@@ -8,7 +8,7 @@ interface OpenAIRequest {
 
 // Parse the prompt from the document
 export const parsePrompt = (doc: string) => {
-  const regex = /^===(user|ai|sys)===$/i;
+  const regex = /^===(user|assistant|system)===$/i;
 
   let result: OpenAIRequest = {};
   const messages: OpenAIRequestMessage[] = [];
@@ -52,4 +52,19 @@ export const parsePrompt = (doc: string) => {
 
   result.messages = (result.messages || []).concat(messages);
   return result;
+};
+
+export const formatPrompt = (req: OpenAIRequest) => {
+  const { messages = [], ...rest } = req;
+  const lines: string[] = [JSON.stringify(rest, null, 2)];
+
+  const validRoles = ["user", "assistant", "system"];
+  for (const msg of messages) {
+    if (!validRoles.includes(msg.role)) {
+      throw new Error(`Invalid role: ${msg.role}`);
+    }
+    lines.push(`===${msg.role}===\n${msg.content}`);
+  }
+
+  return lines.join("\n\n");
 };
