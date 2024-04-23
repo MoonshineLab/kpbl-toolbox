@@ -36,3 +36,10 @@
     transform: rotate(360deg);
   }
 }
+
+.no-background-no-border {
+  background-color: transparent;
+  border: none;
+  resize: none; /* 如果你还想禁止用户调整大小 */
+  outline: none; /* 如果你还想移除聚焦时的轮廓 */
+}
