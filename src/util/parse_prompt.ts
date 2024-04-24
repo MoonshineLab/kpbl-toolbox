@@ -8,7 +8,14 @@ interface OpenAIRequest {
 
 // Parse the prompt from the document
 export const parsePrompt = (doc: string) => {
-  const regex = /^===(user|assistant|system)===$/i;
+  const regex = /^===(user|assistant|system|sys|ai)===$/i;
+  const dict = {
+    user: "user",
+    assistant: "assistant",
+    system: "system",
+    sys: "system",
+    ai: "assistant",
+  };
 
   let result: OpenAIRequest = {};
   const messages: OpenAIRequestMessage[] = [];
@@ -28,7 +35,7 @@ export const parsePrompt = (doc: string) => {
       } catch (e) {}
     } else {
       const s = buf.join("\n");
-      messages.push({ role: tag, content: s.trim() });
+      messages.push({ role: dict[tag], content: s.trim() });
     }
     buf = [];
   };

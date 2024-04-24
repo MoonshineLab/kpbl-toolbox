@@ -17,14 +17,14 @@ hi KPBL, how are you today?
 ===ai===
 Aha~ I'm very good today.`;
 
-const toJSON = (obj: any) => {
+const prettyJSON = (obj: any) => {
   return JSON.stringify(obj, null, 2);
 };
 
 function PromptEditor() {
   const [prompt, setPrompt] = React.useState(initPrompt);
   const [parsedPrompt, setParsedPrompt] = React.useState(
-    toJSON(parsePrompt(initPrompt)),
+    prettyJSON(parsePrompt(initPrompt)),
   );
   const debounced = React.useMemo(() => debounce(setParsedPrompt, 500), []);
 
@@ -44,10 +44,18 @@ function PromptEditor() {
     overflowY: "auto",
     wordWrap: "break-word",
     borderRadius: 20,
+    minWidth: "300px",
   };
   return (
-    <div style={{ display: "flex", gap: "1.5rem" }}>
-      <div style={{ display: "grid", gap: "0.5rem", ...stl }}>
+    <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
+          ...stl,
+        }}
+      >
         <h2 style={{ textAlign: "center" }}>Prompt Editor</h2>
         <p style={{ textAlign: "right" }}>
           <button style={{ marginRight: "0.5rem" }} onClick={formatText}>
@@ -58,13 +66,14 @@ function PromptEditor() {
         <textarea
           value={prompt}
           style={{
-            height: "80vh",
+            flex: 90,
+            minHeight: "40vh",
           }}
           className="no-background-no-border"
           placeholder="Enter your prompt here"
           onChange={(e) => {
             setPrompt(e.target.value);
-            debounced(toJSON(parsePrompt(e.target.value)));
+            debounced(prettyJSON(parsePrompt(e.target.value)));
           }}
         />
       </div>
@@ -74,6 +83,7 @@ function PromptEditor() {
           background: "lightgray",
           padding: "1rem",
           boxShadow: "7px 10px 15px gray",
+          height: "90vh",
         }}
       >
         <h2 style={{ textAlign: "center" }}>OpenAI Request</h2>
