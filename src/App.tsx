@@ -1,20 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { debounce } from "lodash";
-import { formatPrompt, parsePrompt } from "./util/parse_prompt";
+import { formatPrompt, msgToChunk, parsePrompt } from "./util/prompt";
 import "./App.css";
+import OpenAI from "openai";
 
 const initPrompt = `{
     "model": "gpt-3.5-turbo",
     "max_tokens": "512"
 }
 
-===sys===
+==sys==
 I want you to act like a are very cute and lazy animal. You name is KPBL. reply using Chinese
 
-===user===
+==user==
 hi KPBL, how are you today?
 
-===ai===
+==ai==
 Aha~ I'm very good today.`;
 
 const prettyJSON = (obj: any) => {
@@ -22,14 +23,67 @@ const prettyJSON = (obj: any) => {
 };
 
 function PromptEditor() {
-  const [prompt, setPrompt] = React.useState(initPrompt);
-  const [parsedPrompt, setParsedPrompt] = React.useState(
-    prettyJSON(parsePrompt(initPrompt)),
+  const query = new URLSearchParams(window.location.search);
+
+  const [disabled, setDisabled] = useState(false);
+  const promptLocalStorageKey = "__prompt_editor_val";
+
+  const [openai] = useState(() => {
+    const openaiKey = query.get("OPENAI_API_KEY") || "";
+    const openAiUrl = query.get("OPENAI_API_BASE_URL") || "";
+
+    console.log(`OPENAI_API_KEY: ${openaiKey}`);
+    console.log(`OPENAI_API_BASE_URL: ${openAiUrl}`);
+
+    return new OpenAI({
+      apiKey: openaiKey,
+      baseURL: openAiUrl,
+      dangerouslyAllowBrowser: true,
+    });
+  });
+
+  const [prompt, setPrompt] = React.useState(
+    () => localStorage.getItem(promptLocalStorageKey) || initPrompt,
   );
-  const debounced = React.useMemo(() => debounce(setParsedPrompt, 500), []);
+
+  const [parsedPrompt, setParsedPrompt] = React.useState(
+    prettyJSON(parsePrompt(prompt)),
+  );
+
+  const debouncedParse = React.useMemo(
+    () => debounce(setParsedPrompt, 500),
+    [],
+  );
+  const debouncedSave = React.useMemo(
+    () => debounce((k, v) => localStorage.setItem(k, v), 2000),
+    [],
+  );
 
   const copyToPasteboard = (s: string) => () => {
     navigator.clipboard.writeText(s);
+  };
+
+  const sendRequest = async () => {
+    setDisabled(true);
+    try {
+      const res = await openai.chat.completions.create({
+        ...JSON.parse(parsedPrompt),
+        n: 1, // number of responses choices to generate
+      });
+      const msg = res.choices?.[0]?.message;
+      if (!msg) {
+        return;
+      }
+      setPrompt((prev) => {
+        return prev + "\n\n" + msgToChunk(msg);
+      });
+      setParsedPrompt(prettyJSON(parsePrompt(prompt)));
+    } catch (e) {
+      console.error(e);
+      alert(e);
+    } finally {
+      setDisabled(false);
+    }
   };
 
   const formatText = () => {
@@ -39,6 +93,11 @@ function PromptEditor() {
       console.error(e);
     }
   };
+
+  React.useEffect(() => {
+    debouncedSave(promptLocalStorageKey, prompt);
+  }, [prompt]);
+
   const stl: React.CSSProperties = {
     flex: 1,
     overflowY: "auto",
@@ -58,12 +117,13 @@ function PromptEditor() {
       >
         <h2 style={{ textAlign: "center" }}>Prompt Editor</h2>
         <p style={{ textAlign: "right" }}>
-          <button style={{ marginRight: "0.5rem" }} onClick={formatText}>
-            Format
-          </button>
+          <button disabled={disabled} onClick={formatText}>
+            Parse
+          </button>{" "}
           <button onClick={copyToPasteboard(prompt)}>Copy</button>
         </p>
         <textarea
+          disabled={disabled}
           value={prompt}
           style={{
             flex: 90,
@@ -73,7 +133,7 @@ function PromptEditor() {
           placeholder="Enter your prompt here"
           onChange={(e) => {
             setPrompt(e.target.value);
-            debounced(prettyJSON(parsePrompt(e.target.value)));
+            debouncedParse(prettyJSON(parsePrompt(e.target.value)));
           }}
         />
       </div>
@@ -88,7 +148,12 @@ function PromptEditor() {
       >
         <h2 style={{ textAlign: "center" }}>OpenAI Request</h2>
         <p style={{ textAlign: "right" }}>
-          <button onClick={copyToPasteboard(parsedPrompt)}>Copy</button>
+          <button disabled={disabled} onClick={copyToPasteboard(parsedPrompt)}>
+            Copy
+          </button>{" "}
+          <button disabled={disabled} onClick={sendRequest}>
+            Send
+          </button>
         </p>
         <pre style={{ whiteSpace: "break-spaces" }}>{parsedPrompt}</pre>
       </div>

@@ -1,4 +1,4 @@
-import { parsePrompt } from "./parse_prompt";
+import { parsePrompt } from "./prompt";
 
 test("parsePrompt", () => {
   const doc = `===metadata===
