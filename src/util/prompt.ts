@@ -75,7 +75,7 @@ export const formatPrompt = (req: OpenAIRequest) => {
     if (!validRoles.includes(msg.role || '')) {
       throw new Error(`Invalid role: ${msg.role}`);
     }
-    lines.push(`===${msg.role}===\n${msg.content}`);
+    lines.push(msgToChunk(msg));
   }
 
   return lines.join("\n\n");
