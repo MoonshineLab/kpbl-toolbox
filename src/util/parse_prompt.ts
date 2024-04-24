@@ -35,7 +35,7 @@ export const parsePrompt = (doc: string) => {
       } catch (e) {}
     } else {
       const s = buf.join("\n");
-      messages.push({ role: dict[tag], content: s.trim() });
+      messages.push({ role: dict[tag.toLowerCase()], content: s.trim() });
     }
     buf = [];
   };
