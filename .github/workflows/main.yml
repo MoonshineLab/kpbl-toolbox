@@ -20,7 +20,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'  # 选择一个适合你项目的Node.js版本
+          node-version: '20'  # 选择一个适合你项目的Node.js版本
 
       - name: Install Dependencies
         run: npm install
