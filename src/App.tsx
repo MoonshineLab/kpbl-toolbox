@@ -96,7 +96,7 @@ function PromptEditor() {
 
   React.useEffect(() => {
     debouncedSave(promptLocalStorageKey, prompt);
-  }, [prompt]);
+  }, [prompt, debouncedSave]);
 
   const stl: React.CSSProperties = {
     flex: 1,
